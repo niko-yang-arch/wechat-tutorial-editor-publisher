@@ -1,0 +1,91 @@
+{
+  "cover": "imgs/cover-img.png",
+  "steps": [
+    {
+      "stepNumber": 1,
+      "description": "编写需求文档并生成代码",
+      "images-paths": [
+        "imgs/1-1.png",
+        "imgs/1-2.png"
+      ]
+    },
+    {
+      "stepNumber": 2,
+      "description": "SKILL.md流程手册编写(文章编辑)",
+      "images-paths": [
+        "imgs/2-1.png",
+        "imgs/2-2.png",
+        "imgs/2-3.png"
+      ]
+    },
+    {
+      "stepNumber": 3,
+      "description": "SKILL.md流程手册编写(教程发布)",
+      "images-paths": [
+        "imgs/3-1.png",
+        "imgs/3-2.png",
+        "imgs/3-3.png",
+        "imgs/3-4.png"
+      ]
+    },
+    {
+      "stepNumber": 4,
+      "description": "教程模板编写",
+      "images-paths": [
+        "imgs/4-1.png",
+        "imgs/4-2.png"
+      ]
+    },
+    {
+      "stepNumber": 5,
+      "description": "加载Skill并启动服务",
+      "images-paths": [
+        "imgs/5-1.png",
+        "imgs/5-2.png"
+      ]
+    },
+    {
+      "stepNumber": 6,
+      "description": "提交个人信息",
+      "images-paths": [
+        "imgs/6-1.png"
+      ]
+    },
+    {
+      "stepNumber": 7,
+      "description": "编辑教程",
+      "images-paths": [
+        "imgs/7-1.png"
+      ]
+    },
+    {
+      "stepNumber": 8,
+      "description": "保存全部信息并生成step.json",
+      "images-paths": [
+        "imgs/8-1.png"
+      ]
+    },
+    {
+      "stepNumber": 9,
+      "description": "要求Agent编写教程文章",
+      "images-paths": [
+        "imgs/9-1.png"
+      ]
+    },
+    {
+      "stepNumber": 10,
+      "description": "审核文章",
+      "images-paths": [
+        "imgs/10-1.png"
+      ]
+    },
+    {
+      "stepNumber": 11,
+      "description": "要求Agent发布文章",
+      "images-paths": [
+        "imgs/11-1.png",
+        "imgs/11-2.png"
+      ]
+    }
+  ]
+}

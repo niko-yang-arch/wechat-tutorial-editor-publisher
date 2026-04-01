@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>操作步骤收集器 - 真实存储版</title>
+    <style>
+        /* 样式保持不变，使用之前的美观样式 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .server-status {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: inline-block;
+        }
+
+        .server-status.connected {
+            background: #48c78e;
+        }
+
+        .main-panel {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        /* 服务器状态栏 */
+        .server-bar {
+            background: #f0f3ff;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .server-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .server-info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .server-info-label {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .server-info-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #667eea;
+            background: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff4757;
+        }
+
+        .status-dot.connected {
+            background: #48c78e;
+        }
+
+        /* 日期信息栏 */
+        .date-info {
+            background: linear-gradient(135deg, #f5f7ff 0%, #f0f3ff 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            border: 1px solid #667eea30;
+        }
+
+        .date-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .date-label {
+            font-size: 14px;
+            color: #666;
+            background: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+        }
+
+        .date-value {
+            font-family: monospace;
+            font-size: 16px;
+            color: #667eea;
+            font-weight: 600;
+            background: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            border: 1px solid #667eea;
+        }
+
+        .directory-tree {
+            background: #1e1e2f;
+            color: #fff;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.8;
+            margin-bottom: 30px;
+        }
+
+        .directory-tree span {
+            color: #48c78e;
+        }
+
+        /* 用户信息卡片 */
+        .user-info-card {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 2px solid #667eea30;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px #667eea20;
+        }
+
+        /* 步骤卡片 */
+        .steps-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .step-card {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .step-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+        }
+
+        .step-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .step-number {
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .btn-remove {
+            background: #ff4757;
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .btn-remove:hover {
+            background: #ff6b81;
+            transform: scale(1.1);
+        }
+
+        /* 图片上传区域 */
+        .image-upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #fff;
+            margin: 15px 0;
+        }
+
+        .image-upload-area:hover {
+            background: #f0f3ff;
+            border-color: #764ba2;
+        }
+
+        .image-upload-area.dragover {
+            background: #e6e9ff;
+            border-color: #5a4fcf;
+        }
+
+        .upload-icon {
+            font-size: 30px;
+            margin-bottom: 5px;
+            color: #667eea;
+        }
+
+        .upload-text {
+            font-size: 14px;
+            color: #333;
+        }
+
+        .upload-hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        /* 图片预览网格 */
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .image-item {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #e0e0e0;
+            background: white;
+            transition: all 0.3s;
+        }
+
+        .image-item:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .image-item img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .image-info {
+            padding: 8px;
+            background: white;
+        }
+
+        .image-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .image-url {
+            font-size: 9px;
+            color: #667eea;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .image-item .remove-image {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255, 71, 87, 0.9);
+            color: white;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 10;
+        }
+
+        .image-item:hover .remove-image {
+            opacity: 1;
+        }
+
+        .upload-status {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 4px;
+            font-size: 10px;
+            text-align: center;
+            background: rgba(72, 199, 142, 0.9);
+            color: white;
+            transform: translateY(100%);
+            transition: transform 0.3s;
+        }
+
+        .image-item.uploaded .upload-status {
+            transform: translateY(0);
+        }
+
+        /* 结束语卡片 */
+        .closing-card {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 30px 0 20px;
+            border: 2px solid #ff980050;
+            position: relative;
+        }
+
+        .closing-card::before {
+            content: "结束语";
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: #ff9800;
+            color: white;
+            padding: 2px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .wechat-upload-area {
+            border: 2px dashed #ff9800;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #fff;
+            margin-top: 15px;
+        }
+
+        .wechat-upload-area:hover {
+            background: #fff3e0;
+            border-color: #f57c00;
+        }
+
+        .wechat-preview {
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .wechat-qr-item {
+            position: relative;
+            width: 120px;
+            border: 2px solid #ff9800;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .wechat-qr-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+        }
+
+        /* 按钮组 */
+        .action-bar {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #48c78e;
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #3aa86e;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background: #ff9800;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #f57c00;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 统计卡片 */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        /* JSON预览 */
+        .json-preview {
+            margin-top: 30px;
+            background: #1e1e2f;
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .json-preview h3 {
+            color: white;
+            margin-bottom: 15px;
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .json-content {
+            background: #2d2d3f;
+            border-radius: 10px;
+            padding: 15px;
+            overflow-x: auto;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .json-content pre {
+            color: #fff;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        /* 状态提示 */
+        .status-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            display: none;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .status-success {
+            background: #48c78e;
+        }
+
+        .status-error {
+            background: #ff4757;
+        }
+
+        .status-info {
+            background: #667eea;
+        }
+
+        /* 文件列表 */
+        .file-list {
+            margin-top: 20px;
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-name {
+            font-size: 13px;
+            color: #333;
+        }
+
+        .file-link {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 12px;
+        }
+
+        .file-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .date-info {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .action-bar {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📸 操作步骤收集器</h1>
+            <div class="server-status" id="serverStatus">🔄 连接服务器中...</div>
+        </div>
+
+        <div id="statusMessage" class="status-message"></div>
+
+        <div class="main-panel">
+            <!-- 服务器状态栏 -->
+            <div class="server-bar">
+                <div class="server-info">
+                    <div class="server-info-item">
+                        <span class="server-info-label">服务器地址</span>
+                        <span class="server-info-value" id="serverUrl">http://localhost:3000</span>
+                    </div>
+                    <div class="server-info-item">
+                        <span class="server-info-label">存储目录</span>
+                        <span class="server-info-value" id="storagePath">assets/ + JSONS/</span>
+                    </div>
+                </div>
+                <div class="connection-status">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span id="statusText">连接中...</span>
+                </div>
+            </div>
+
+            <!-- 日期信息栏 -->
+            <div class="date-info">
+                <div class="date-item">
+                    <span class="date-label">今日日期</span>
+                    <span class="date-value" id="todayDate"></span>
+                </div>
+                <div class="date-item">
+                    <span class="date-label">图片目录</span>
+                    <span class="date-value" id="imagePath"></span>
+                </div>
+                <div class="date-item">
+                    <span class="date-label">JSON目录</span>
+                    <span class="date-value" id="jsonPath"></span>
+                </div>
+            </div>
+
+            <!-- 目录结构预览 -->
+            <div class="directory-tree" id="directoryTree">
+                Loading...
+            </div>
+
+            <!-- 用户信息 -->
+            <div class="user-info-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="color: #333;">👤 用户信息</h3>
+                </div>
+                
+                <div class="form-group">
+                    <label for="nickname">用户昵称 <span style="color: #ff4757;">*</span></label>
+                    <input type="text" id="nickname" placeholder="请输入您的昵称" value="用户">
+                </div>
+            </div>
+
+            <!-- 操作步骤区域 -->
+            <div class="form-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="color: #333;">📝 操作步骤</h3>
+                    <span style="color: #667eea;" id="stepCount">0 个步骤</span>
+                </div>
+
+                <!-- 步骤容器 -->
+                <div class="steps-container" id="stepsContainer"></div>
+
+                <!-- 添加步骤按钮 -->
+                <button class="btn btn-secondary" onclick="addStep()" style="width: 100%;">
+                    ➕ 添加步骤
+                </button>
+            </div>
+
+            <!-- 结束语区域 -->
+            <div class="closing-card">
+                <div class="form-group">
+                    <label for="closingMessage">自我介绍 / 结束语</label>
+                    <textarea id="closingMessage" placeholder="请在这里输入您的自我介绍、使用感受或想说的话..." rows="4"></textarea>
+                </div>
+                
+                <div>
+                    <label>
+                        个人微信二维码 <span style="font-size: 12px; color: #ff9800;">可选</span>
+                    </label>
+                    <div class="wechat-upload-area" onclick="triggerWechatUpload()"
+                         ondragover="handleDragOver(event)" 
+                         ondragleave="handleDragLeave(event)"
+                         ondrop="handleWechatDrop(event)">
+                        <div class="upload-icon">📱</div>
+                        <div class="upload-text">点击上传或拖拽微信二维码</div>
+                        <div class="upload-hint">支持PNG、JPG格式，自动保存到服务器</div>
+                        <input type="file" class="wechat-input" accept="image/*" 
+                               style="display: none;" onchange="handleWechatSelect(event)">
+                    </div>
+                    
+                    <div class="wechat-preview" id="wechatPreview"></div>
+                </div>
+            </div>
+
+            <!-- 统计信息 -->
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-label">用户昵称</div>
+                    <div class="stat-value" id="statNickname">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">步骤总数</div>
+                    <div class="stat-value" id="statSteps">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">图片总数</div>
+                    <div class="stat-value" id="statImages">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">已上传文件</div>
+                    <div class="stat-value" id="statUploaded">0</div>
+                </div>
+            </div>
+
+            <!-- 操作按钮组 -->
+            <div class="action-bar">
+                <button class="btn btn-primary" onclick="uploadAll()" id="uploadBtn">
+                    ☁️ 上传所有文件到服务器
+                </button>
+                <button class="btn btn-success" onclick="saveToServer()" id="saveBtn">
+                    💾 保存JSON到服务器
+                </button>
+                <button class="btn btn-warning" onclick="clearAll()">
+                    🗑️ 清空所有
+                </button>
+            </div>
+
+            <!-- 今日已上传文件列表 -->
+            <div class="file-list" id="fileList">
+                <h4 style="margin-bottom: 10px;">📋 今日已上传文件</h4>
+                <div id="fileListContent">暂无文件</div>
+            </div>
+
+            <!-- JSON预览 -->
+            <div class="json-preview">
+                <h3>📋 当前数据预览</h3>
+                <div class="json-content">
+                    <pre id="jsonPreview">{
+    "date": "2024-01-15",
+    "user": {
+        "nickname": ""
+    },
+    "steps": [],
+    "closing": {
+        "message": "",
+        "wechatQR": null
+    }
+}</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 配置
+        const API_BASE_URL = 'http://localhost:3000/api';
+        let serverConnected = false;
+
+        // 状态管理
+        let state = {
+            date: '',
+            user: {
+                nickname: '用户'
+            },
+            steps: [],
+            closing: {
+                message: '',
+                wechatQR: null // { file, preview, path, uploaded }
+            },
+            uploadedFiles: {
+                images: [],
+                wechat: null,
+                json: null
+            }
+        };
+
+        // 初始化
+        function init() {
+            updateDateInfo();
+            checkServerConnection();
+            // 默认添加一个步骤
+            if (state.steps.length === 0) {
+                addStep();
+            }
+            // 绑定输入事件
+            document.getElementById('nickname').addEventListener('input', function(e) {
+                state.user.nickname = e.target.value || '用户';
+                updateStats();
+                updateJSONPreview();
+            });
+            
+            document.getElementById('closingMessage').addEventListener('input', function(e) {
+                state.closing.message = e.target.value;
+                updateJSONPreview();
+            });
+        }
+
+        // 检查服务器连接
+        async function checkServerConnection() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/list/today`);
+                if (response.ok) {
+                    serverConnected = true;
+                    document.getElementById('serverStatus').textContent = '✅ 已连接到服务器';
+                    document.getElementById('serverStatus').className = 'server-status connected';
+                    document.getElementById('statusDot').className = 'status-dot connected';
+                    document.getElementById('statusText').textContent = '已连接';
+                    
+                    // 获取今日文件列表
+                    loadTodayFiles();
+                } else {
+                    throw new Error('服务器响应异常');
+                }
+            } catch (error) {
+                serverConnected = false;
+                document.getElementById('serverStatus').textContent = '❌ 服务器连接失败';
+                document.getElementById('serverStatus').className = 'server-status';
+                document.getElementById('statusDot').className = 'status-dot';
+                document.getElementById('statusText').textContent = '未连接';
+                showMessage('无法连接到服务器，请确保Node.js服务已启动', 'error');
+            }
+        }
+
+        // 加载今日文件列表
+        async function loadTodayFiles() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/list/today`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    renderFileList(result.data);
+                }
+            } catch (error) {
+                console.error('加载文件列表失败:', error);
+            }
+        }
+
+        // 渲染文件列表
+        function renderFileList(data) {
+            const content = document.getElementById('fileListContent');
+            
+            let html = '';
+            
+            if (data.jsonFiles.length > 0) {
+                html += '<div style="margin-bottom: 10px;"><strong>JSON文件:</strong></div>';
+                data.jsonFiles.forEach(file => {
+                    html += `
+                        <div class="file-item">
+                            <span class="file-name">${file.name}</span>
+                            <a href="${file.url}" target="_blank" class="file-link">查看</a>
+                        </div>
+                    `;
+                });
+            }
+            
+            if (data.imageFiles.length > 0) {
+                html += '<div style="margin: 10px 0;"><strong>图片文件:</strong></div>';
+                data.imageFiles.forEach(file => {
+                    html += `
+                        <div class="file-item">
+                            <span class="file-name">${file.name}</span>
+                            <a href="${file.url}" target="_blank" class="file-link">查看</a>
+                        </div>
+                    `;
+                });
+            }
+            
+            if (data.wechatFiles.length > 0) {
+                html += '<div style="margin: 10px 0;"><strong>微信二维码:</strong></div>';
+                data.wechatFiles.forEach(file => {
+                    html += `
+                        <div class="file-item">
+                            <span class="file-name">${file.name}</span>
+                            <a href="${file.url}" target="_blank" class="file-link">查看</a>
+                        </div>
+                    `;
+                });
+            }
+            
+            if (!html) {
+                html = '暂无文件';
+            }
+            
+            content.innerHTML = html;
+        }
+
+        // 更新日期信息
+        function updateDateInfo() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            state.date = `${year}-${month}-${day}`;
+            
+            // 路径
+            const imagePath = `../assets/${state.date}/`;
+            const jsonPath = `../JSONS/${state.date}/`;
+            
+            document.getElementById('todayDate').textContent = state.date;
+            document.getElementById('imagePath').textContent = imagePath;
+            document.getElementById('jsonPath').textContent = jsonPath;
+            
+            // 更新目录树显示
+            document.getElementById('directoryTree').innerHTML = `
+📁 服务器存储结构：
+<span>├─ assets/</span>
+<span>│  └─ ${state.date}/</span>
+<span>│     ├─ step1_时间戳_图片1.jpg</span>
+<span>│     ├─ step2_时间戳_图片2.png</span>
+<span>│     └─ wechat/</span>
+<span>│        └─ 微信二维码_时间戳.png</span>
+<span>├─ JSONS/</span>
+<span>│  └─ ${state.date}/</span>
+<span>│     └─ user_昵称_${state.date}_时间戳.json</span>
+<span>└─ server.js (Node.js服务)</span>
+            `;
+        }
+
+        // 添加步骤
+        function addStep(stepData = null) {
+            const stepIndex = state.steps.length;
+            const stepId = `step_${Date.now()}_${stepIndex}`;
+            
+            state.steps.push({
+                id: stepId,
+                description: stepData?.description || '',
+                images: stepData?.images || []
+            });
+            
+            renderSteps();
+            updateStats();
+            updateJSONPreview();
+        }
+
+        // 渲染所有步骤
+        function renderSteps() {
+            const container = document.getElementById('stepsContainer');
+            container.innerHTML = '';
+            
+            state.steps.forEach((step, index) => {
+                const stepCard = createStepCard(step, index);
+                container.appendChild(stepCard);
+            });
+            
+            document.getElementById('stepCount').textContent = `${state.steps.length} 个步骤`;
+        }
+
+        // 创建步骤卡片
+        function createStepCard(step, index) {
+            const div = document.createElement('div');
+            div.className = 'step-card';
+            div.id = step.id;
+            div.dataset.index = index;
+            
+            div.innerHTML = `
+                <div class="step-header">
+                    <span class="step-number">步骤 ${index + 1}</span>
+                    <button class="btn-remove" onclick="removeStep(${index})">×</button>
+                </div>
+                
+                <textarea 
+                    class="step-desc" 
+                    placeholder="描述这个步骤..." 
+                    oninput="updateStepDescription(${index}, this.value)"
+                >${step.description}</textarea>
+                
+                <div class="image-upload-area" onclick="triggerUpload(${index})"
+                     ondragover="handleDragOver(event)" 
+                     ondragleave="handleDragLeave(event)"
+                     ondrop="handleDrop(event, ${index})">
+                    <div class="upload-icon">📸</div>
+                    <div class="upload-text">点击上传或拖拽图片</div>
+                    <div class="upload-hint">支持多张图片，自动上传到服务器</div>
+                    <input type="file" class="image-input" accept="image/*" multiple 
+                           style="display: none;" onchange="handleImageSelect(event, ${index})">
+                </div>
+                
+                <div class="image-grid" id="grid_${step.id}">
+                    ${renderImages(step.images, index)}
+                </div>
+            `;
+            
+            return div;
+        }
+
+        // 渲染图片
+        function renderImages(images, stepIndex) {
+            if (!images || images.length === 0) return '';
+            
+            return images.map(img => `
+                <div class="image-item ${img.uploaded ? 'uploaded' : ''}" data-path="${img.path || ''}">
+                    <img src="${img.preview || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 100 100\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23667eea\' opacity=\'0.1\'/%3E%3Ctext x=\'50\' y=\'50\' font-size=\'14\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23667eea\'%3E📸%3C/text%3E%3C/svg%3E'}" alt="步骤图片">
+                    <div class="image-info">
+                        <div class="image-name">${img.name || 'image.jpg'}</div>
+                        <div class="image-url">${img.url || '待上传'}</div>
+                    </div>
+                    <button class="remove-image" onclick="removeImage(${stepIndex}, '${img.path || ''}')">×</button>
+                    ${img.uploaded ? '<div class="upload-status">已上传</div>' : ''}
+                </div>
+            `).join('');
+        }
+
+        // 触发上传
+        function triggerUpload(stepIndex) {
+            const step = state.steps[stepIndex];
+            const stepCard = document.getElementById(step.id);
+            const fileInput = stepCard.querySelector('.image-input');
+            fileInput.click();
+        }
+
+        // 处理拖拽
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.target.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.target.classList.remove('dragover');
+        }
+
+        function handleDrop(e, stepIndex) {
+            e.preventDefault();
+            e.target.classList.remove('dragover');
+            
+            const files = Array.from(e.dataTransfer.files);
+            handleImageFiles(files, stepIndex);
+        }
+
+        // 处理图片选择
+        function handleImageSelect(e, stepIndex) {
+            const files = Array.from(e.target.files);
+            handleImageFiles(files, stepIndex);
+        }
+
+        // 处理图片文件（仅预览，不自动上传）
+        function handleImageFiles(files, stepIndex) {
+            files.forEach(file => {
+                if (!file.type.startsWith('image/')) return;
+                
+                // 创建预览
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    // 添加到步骤的图片列表
+                    if (!state.steps[stepIndex].images) {
+                        state.steps[stepIndex].images = [];
+                    }
+                    
+                    state.steps[stepIndex].images.push({
+                        name: file.name,
+                        file: file,
+                        preview: e.target.result,
+                        uploaded: false,
+                        stepIndex: stepIndex
+                    });
+                    
+                    // 重新渲染步骤
+                    renderSteps();
+                    updateStats();
+                    updateJSONPreview();
+                };
+                reader.readAsDataURL(file);
+            });
+            
+            showMessage(`已添加 ${files.length} 张图片到步骤 ${stepIndex + 1}`, 'info');
+        }
+
+        // 移除图片
+        function removeImage(stepIndex, imagePath) {
+            // 从步骤中移除
+            if (state.steps[stepIndex] && state.steps[stepIndex].images) {
+                state.steps[stepIndex].images = state.steps[stepIndex].images.filter(
+                    img => img.path !== imagePath
+                );
+            }
+            
+            renderSteps();
+            updateStats();
+            updateJSONPreview();
+            showMessage('图片已移除', 'info');
+        }
+
+        // 移除步骤
+        function removeStep(index) {
+            // 移除步骤
+            state.steps.splice(index, 1);
+            
+            // 重新渲染
+            renderSteps();
+            updateStats();
+            updateJSONPreview();
+        }
+
+        // 更新步骤描述
+        function updateStepDescription(index, value) {
+            state.steps[index].description = value;
+            updateJSONPreview();
+        }
+
+        // 微信二维码上传
+        function triggerWechatUpload() {
+            const input = document.querySelector('.wechat-input');
+            input.click();
+        }
+
+        function handleWechatDrop(e) {
+            e.preventDefault();
+            e.target.classList.remove('dragover');
+            
+            const files = Array.from(e.dataTransfer.files);
+            if (files.length > 0) {
+                handleWechatFile(files[0]);
+            }
+        }
+
+        function handleWechatSelect(e) {
+            const files = Array.from(e.target.files);
+            if (files.length > 0) {
+                handleWechatFile(files[0]);
+            }
+        }
+
+        function handleWechatFile(file) {
+            if (!file.type.startsWith('image/')) {
+                showMessage('请上传图片格式的二维码', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                state.closing.wechatQR = {
+                    name: file.name,
+                    file: file,
+                    preview: e.target.result,
+                    uploaded: false
+                };
+                
+                renderWechatPreview();
+                updateStats();
+                updateJSONPreview();
+                showMessage('微信二维码已添加', 'success');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function renderWechatPreview() {
+            const preview = document.getElementById('wechatPreview');
+            if (state.closing.wechatQR) {
+                preview.innerHTML = `
+                    <div class="wechat-qr-item ${state.closing.wechatQR.uploaded ? 'uploaded' : ''}">
+                        <img src="${state.closing.wechatQR.preview}" alt="微信二维码">
+                        <button class="remove-image" onclick="removeWechatQR()" style="opacity: 1;">×</button>
+                        ${state.closing.wechatQR.uploaded ? '<div class="upload-status">已上传</div>' : ''}
+                    </div>
+                `;
+            } else {
+                preview.innerHTML = '';
+            }
+        }
+
+        function removeWechatQR() {
+            state.closing.wechatQR = null;
+            renderWechatPreview();
+            updateStats();
+            updateJSONPreview();
+            showMessage('微信二维码已移除', 'info');
+        }
+
+        // 上传所有文件到服务器
+        async function uploadAll() {
+            if (!serverConnected) {
+                showMessage('服务器未连接，请先启动Node.js服务', 'error');
+                return;
+            }
+            
+            const uploadBtn = document.getElementById('uploadBtn');
+            
+            if (!state.user.nickname) {
+                showMessage('请填写用户昵称', 'error');
+                return;
+            }
+            
+            if (state.steps.length === 0) {
+                showMessage('请至少添加一个步骤', 'error');
+                return;
+            }
+            
+            // 收集所有待上传的图片
+            const stepImages = [];
+            state.steps.forEach((step, stepIndex) => {
+                step.images.forEach(img => {
+                    if (!img.uploaded && img.file) {
+                        stepImages.push({
+                            file: img.file,
+                            stepIndex: stepIndex
+                        });
+                    }
+                });
+            });
+            
+            const wechatImage = state.closing.wechatQR && !state.closing.wechatQR.uploaded 
+                ? state.closing.wechatQR.file 
+                : null;
+            
+            if (stepImages.length === 0 && !wechatImage) {
+                showMessage('没有新文件需要上传', 'error');
+                return;
+            }
+            
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '⏳ 上传中...';
+            
+            try {
+                const formData = new FormData();
+                
+                // 添加步骤图片
+                stepImages.forEach((img, index) => {
+                    formData.append('stepImages', img.file);
+                    formData.append(`stepIndex_${index}`, img.stepIndex);
+                });
+                
+                // 添加微信二维码
+                if (wechatImage) {
+                    formData.append('wechatImage', wechatImage);
+                }
+                
+                // 添加JSON数据
+                const jsonData = {
+                    user: { nickname: state.user.nickname },
+                    steps: state.steps.map((step, index) => ({
+                        stepNumber: index + 1,
+                        description: step.description,
+                        images: step.images.filter(img => img.uploaded).map(img => img.url)
+                    })),
+                    closing: {
+                        message: state.closing.message
+                    }
+                };
+                formData.append('jsonData', JSON.stringify(jsonData));
+                
+                // 发送请求
+                const response = await fetch(`${API_BASE_URL}/save/all`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // 更新上传状态
+                    stepImages.forEach((img, index) => {
+                        const step = state.steps[img.stepIndex];
+                        const stepImg = step.images.find(i => i.file === img.file);
+                        if (stepImg) {
+                            stepImg.uploaded = true;
+                            stepImg.url = result.data.stepImages[index]?.url;
+                        }
+                    });
+                    
+                    if (wechatImage && state.closing.wechatQR) {
+                        state.closing.wechatQR.uploaded = true;
+                        state.closing.wechatQR.url = result.data.wechatImage?.url;
+                    }
+                    
+                    // 重新渲染
+                    renderSteps();
+                    renderWechatPreview();
+                    
+                    // 刷新文件列表
+                    loadTodayFiles();
+                    
+                    showMessage(`✅ 上传成功！\nJSON文件: ${result.data.jsonFile.name}`, 'success');
+                } else {
+                    showMessage('上传失败: ' + result.message, 'error');
+                }
+                
+            } catch (error) {
+                showMessage('上传失败: ' + error.message, 'error');
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = '☁️ 上传所有文件到服务器';
+            }
+        }
+
+        // 保存JSON到服务器
+        async function saveToServer() {
+            if (!serverConnected) {
+                showMessage('服务器未连接，请先启动Node.js服务', 'error');
+                return;
+            }
+            
+            const saveBtn = document.getElementById('saveBtn');
+            
+            if (!state.user.nickname) {
+                showMessage('请填写用户昵称', 'error');
+                return;
+            }
+            
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '⏳ 保存中...';
+            
+            try {
+                // 准备数据
+                const jsonData = {
+                    date: state.date,
+                    user: {
+                        nickname: state.user.nickname
+                    },
+                    steps: state.steps.map((step, index) => ({
+                        stepNumber: index + 1,
+                        description: step.description,
+                        images: step.images.map(img => img.url || img.path || '')
+                    })),
+                    closing: {
+                        message: state.closing.message,
+                        wechatQR: state.closing.wechatQR?.url || null
+                    }
+                };
+                
+                // 发送请求
+                const response = await fetch(`${API_BASE_URL}/save/json`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(jsonData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // 刷新文件列表
+                    loadTodayFiles();
+                    
+                    showMessage(`✅ JSON保存成功！\n文件名: ${result.file.name}`, 'success');
+                } else {
+                    showMessage('保存失败: ' + result.message, 'error');
+                }
+                
+            } catch (error) {
+                showMessage('保存失败: ' + error.message, 'error');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '💾 保存JSON到服务器';
+            }
+        }
+
+        // 更新统计
+        function updateStats() {
+            const stepCount = state.steps.length;
+            const imageCount = state.steps.reduce((acc, step) => 
+                acc + (step.images?.length || 0), 0
+            ) + (state.closing.wechatQR ? 1 : 0);
+            
+            const uploadedCount = state.steps.reduce((acc, step) => 
+                acc + (step.images?.filter(img => img.uploaded).length || 0), 0
+            ) + (state.closing.wechatQR?.uploaded ? 1 : 0);
+            
+            document.getElementById('statNickname').textContent = state.user.nickname || '-';
+            document.getElementById('statSteps').textContent = stepCount;
+            document.getElementById('statImages').textContent = imageCount;
+            document.getElementById('statUploaded').textContent = uploadedCount;
+        }
+
+        // 更新JSON预览
+        function updateJSONPreview() {
+            const data = {
+                date: state.date,
+                user: {
+                    nickname: state.user.nickname
+                },
+                steps: state.steps.map((step, index) => ({
+                    stepNumber: index + 1,
+                    description: step.description,
+                    images: step.images?.map(img => img.url || img.path || '') || []
+                })),
+                closing: {
+                    message: state.closing.message,
+                    wechatQR: state.closing.wechatQR?.url || null
+                }
+            };
+            
+            document.getElementById('jsonPreview').textContent = 
+                JSON.stringify(data, null, 2);
+        }
+
+        // 清空所有
+        function clearAll() {
+            if (confirm('确定要清空所有数据吗？')) {
+                state.steps = [];
+                state.closing = {
+                    message: '',
+                    wechatQR: null
+                };
+                state.user.nickname = '用户';
+                
+                document.getElementById('nickname').value = '用户';
+                document.getElementById('closingMessage').value = '';
+                
+                renderSteps();
+                renderWechatPreview();
+                updateStats();
+                updateJSONPreview();
+                showMessage('已清空所有数据', 'info');
+            }
+        }
+
+        // 显示消息
+        function showMessage(text, type) {
+            const msg = document.getElementById('statusMessage');
+            msg.textContent = text;
+            msg.className = `status-message status-${type}`;
+            msg.style.display = 'block';
+            
+            setTimeout(() => {
+                msg.style.display = 'none';
+            }, 3000);
+        }
+
+        // 初始化
+        init();
+    </script>
+</body>
+</html>

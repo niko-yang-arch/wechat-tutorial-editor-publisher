@@ -1,0 +1,51 @@
+{
+  "user": {
+    "nickname": "旋转矩阵"
+  },
+  "steps": [
+    {
+      "stepNumber": 1,
+      "description": "下载opencode",
+      "images": []
+    },
+    {
+      "stepNumber": 2,
+      "description": "安装opencode",
+      "images": []
+    }
+  ],
+  "closing": {
+    "message": "我是独立架构师，欢迎关注",
+    "wechatQR": "/assets/2026-03-19/wechat/step0_1773930190669_vukic_head_2024.png"
+  },
+  "serverInfo": {
+    "savedAt": "2026-03-19T14:23:10.671Z",
+    "filePath": "/JSONS/2026-03-19/user_旋转矩阵_2026-03-19_1773930190671.json",
+    "imageBaseUrl": "/assets/2026-03-19/",
+    "stepImages": [
+      {
+        "stepIndex": "stepImages",
+        "originalName": "nodejs_cover_photo_smaller_size.png",
+        "fileName": "step0_1773930190663_nodejs_cover_photo_smaller_size.png",
+        "path": "/Users/admin/.openclaw/workspace-my-media-edit/skills/my-wechat-editor/assets/2026-03-19/step0_1773930190663_nodejs_cover_photo_smaller_size.png",
+        "size": 815971,
+        "url": "/assets/2026-03-19/step0_1773930190663_nodejs_cover_photo_smaller_size.png"
+      },
+      {
+        "stepIndex": "stepImages",
+        "originalName": "screenshot-20260319-174221.png",
+        "fileName": "step0_1773930190669_screenshot_20260319_174221.png",
+        "path": "/Users/admin/.openclaw/workspace-my-media-edit/skills/my-wechat-editor/assets/2026-03-19/step0_1773930190669_screenshot_20260319_174221.png",
+        "size": 26604,
+        "url": "/assets/2026-03-19/step0_1773930190669_screenshot_20260319_174221.png"
+      }
+    ],
+    "wechatImage": {
+      "originalName": "vukic_head_2024.png",
+      "fileName": "step0_1773930190669_vukic_head_2024.png",
+      "path": "/Users/admin/.openclaw/workspace-my-media-edit/skills/my-wechat-editor/assets/2026-03-19/step0_1773930190669_vukic_head_2024.png",
+      "size": 38330,
+      "url": "/assets/2026-03-19/wechat/step0_1773930190669_vukic_head_2024.png"
+    }
+  }
+}
