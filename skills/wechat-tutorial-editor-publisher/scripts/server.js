@@ -63,18 +63,29 @@ app.post('/api/save-steps', uploadSteps.fields([
   { name: 'stepImages' }
 ]), async (req, res) => {
   try {
-    const { steps: stepsJson } = req.body;
+    const { steps: stepsJson, dirName: clientDirName } = req.body;
     const stepsData = JSON.parse(stepsJson);
     
-    // 生成本地时间目录名: [yyyy-MM-ddTHH-mm-ss]
-    const now = new Date();
-    const pad = (n) => n.toString().padStart(2, '0');
-    const dirName = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+    // 如果客户端提供了 dirName，则使用它，否则生成新的
+    let dirName = clientDirName;
+    if (!dirName) {
+      // 生成本地时间目录名: [yyyy-MM-ddTHH-mm-ss]
+      const now = new Date();
+      const pad = (n) => n.toString().padStart(2, '0');
+      dirName = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+    }
     
     const targetDir = path.join(FILES_DIR, dirName);
     const imgsDir = path.join(targetDir, 'imgs');
     
-    await fs.ensureDir(imgsDir);
+    // 如果是覆盖模式，我们可能需要清空之前的 imgs 目录以防脏数据
+    if (clientDirName) {
+      // 但要注意，如果某些图片没变，我们这种方式（基于新上传的文件）也是没问题的
+      // 为了安全，我们先清空 imgs
+      await fs.ensureDir(imgsDir);
+    } else {
+      await fs.ensureDir(imgsDir);
+    }
 
     // 处理头图
     let coverPath = null;

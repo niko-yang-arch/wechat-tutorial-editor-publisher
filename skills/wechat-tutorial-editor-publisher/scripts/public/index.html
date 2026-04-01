@@ -48,10 +48,17 @@
         .actions { display: flex; justify-content: space-between; margin-top: 30px; gap: 15px; }
         .add-step-btn { flex: 1; padding: 12px; background: white; border: 1px dashed #1890ff; color: #1890ff; border-radius: 4px; cursor: pointer; font-size: 1rem; transition: all 0.3s; }
         .add-step-btn:hover { background: #e6f7ff; }
+        .clear-all-btn { flex: 1; padding: 12px; background: white; border: 1px solid #ff4d4f; color: #ff4d4f; border-radius: 4px; cursor: pointer; font-size: 1rem; transition: all 0.3s; }
+        .clear-all-btn:hover { background: #fff1f0; }
         .save-all-btn { flex: 2; padding: 12px; background: #07c160; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; font-weight: bold; transition: background 0.3s; }
         .save-all-btn:hover { background: #06ae56; }
         
         .loading { display: none; text-align: center; color: #1890ff; margin-top: 15px; font-weight: bold; }
+        .auto-save-status { text-align: right; font-size: 0.8rem; color: #8c8c8c; margin-top: 10px; height: 1.2rem; }
+
+        .step-actions { display: flex; gap: 10px; align-items: center; }
+        .insert-btn { color: #1890ff; cursor: pointer; border: none; background: none; font-size: 0.9rem; }
+        .insert-btn:hover { text-decoration: underline; }
         
         .cover-section { border: 2px dashed #d9d9d9; border-radius: 8px; padding: 20px; margin-bottom: 30px; background: #fafafa; text-align: center; cursor: pointer; }
         .cover-section:hover { border-color: #1890ff; }
@@ -117,8 +124,10 @@
         
         <div class="actions">
             <button class="add-step-btn" id="addStepBtn">+ 添加步骤</button>
+            <button class="clear-all-btn" id="clearAllBtn">清空全部</button>
             <button class="save-all-btn" id="saveAllBtn">保存全部信息</button>
         </div>
+        <div class="auto-save-status" id="autoSaveStatus"></div>
         <div class="loading" id="loadingText">正在保存中，请稍候...</div>
     </div>
 
@@ -137,9 +146,14 @@
         let steps = [];
         const stepsContainer = document.getElementById('stepsContainer');
         const addStepBtn = document.getElementById('addStepBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
         const saveAllBtn = document.getElementById('saveAllBtn');
         const loadingText = document.getElementById('loadingText');
+        const autoSaveStatus = document.getElementById('autoSaveStatus');
         let coverImageFile = null;
+        let currentDirName = null;
+        let autoSaveTimer = null;
+        let changeDebounceTimer = null;
 
         // Custom Modal Logic
         const modal = document.getElementById('customModal');
@@ -188,6 +202,28 @@
 
         // 初始化第一个步骤
         addStep();
+        startHeartbeat();
+
+        function startHeartbeat() {
+            // 每3分钟心跳自动保存
+            setInterval(() => {
+                console.log('Heartbeat auto-save triggered');
+                saveSteps(true);
+            }, 3 * 60 * 1000);
+        }
+
+        function triggerChangeSave() {
+            if (changeDebounceTimer) clearTimeout(changeDebounceTimer);
+            changeDebounceTimer = setTimeout(() => {
+                console.log('Change-triggered auto-save');
+                saveSteps(true);
+            }, 5000); // 5秒防抖
+        }
+
+        // 监听整个容器的输入变化
+        stepsContainer.addEventListener('input', triggerChangeSave);
+        stepsContainer.addEventListener('change', triggerChangeSave);
+        document.getElementById('coverInput').addEventListener('change', triggerChangeSave);
 
         function handleCoverUpload(event) {
             const file = event.target.files[0];
@@ -204,6 +240,7 @@
                     document.querySelector('.cover-requirements').style.display = 'none';
                 };
                 reader.readAsDataURL(file);
+                triggerChangeSave();
             }
         }
 
@@ -218,19 +255,21 @@
             removeBtn.style.display = 'none';
             document.querySelector('.cover-title').style.display = 'block';
             document.querySelector('.cover-requirements').style.display = 'block';
+            triggerChangeSave();
         }
 
-        function addStep() {
+        function addStep(atIndex = -1) {
             const stepId = Date.now();
-            const stepIndex = steps.length + 1;
-            
             const stepElement = document.createElement('div');
             stepElement.className = 'step-item';
             stepElement.id = `step-${stepId}`;
             stepElement.innerHTML = `
                 <div class="step-header">
-                    <span class="step-number">步骤 ${stepIndex}</span>
-                    <button class="remove-btn" onclick="removeStep(${stepId})">删除</button>
+                    <span class="step-number">步骤</span>
+                    <div class="step-actions">
+                        <button class="insert-btn" onclick="addStepBefore(${stepId})">在此前插入</button>
+                        <button class="remove-btn" onclick="removeStep(${stepId})">删除</button>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>描述</label>
@@ -238,7 +277,11 @@
                 </div>
                 <div class="form-group">
                     <label>图片 (至少一张)</label>
-                    <div class="image-upload-area" onclick="document.getElementById('file-${stepId}').click()">
+                    <div class="image-upload-area" 
+                         onclick="document.getElementById('file-${stepId}').click()"
+                         ondragover="event.preventDefault(); this.style.borderColor='#1890ff';"
+                         ondragleave="this.style.borderColor='#d9d9d9';"
+                         ondrop="handleDrop(event, ${stepId}, this)">
                         点击或拖拽图片到此处上传
                     </div>
                     <input type="file" id="file-${stepId}" style="display: none" multiple accept="image/*" onchange="handleImageUpload(event, ${stepId})">
@@ -246,9 +289,25 @@
                 </div>
             `;
             
-            stepsContainer.appendChild(stepElement);
-            steps.push({ id: stepId, description: '', images: [] });
+            const newStep = { id: stepId, description: '', images: [] };
+
+            if (atIndex === -1) {
+                stepsContainer.appendChild(stepElement);
+                steps.push(newStep);
+            } else {
+                const referenceElement = stepsContainer.children[atIndex];
+                stepsContainer.insertBefore(stepElement, referenceElement);
+                steps.splice(atIndex, 0, newStep);
+            }
             updateStepNumbers();
+            triggerChangeSave();
+        }
+
+        function addStepBefore(stepId) {
+            const index = steps.findIndex(s => s.id === stepId);
+            if (index > -1) {
+                addStep(index);
+            }
         }
 
         function removeStep(id) {
@@ -261,6 +320,7 @@
                 steps.splice(index, 1);
                 document.getElementById(`step-${id}`).remove();
                 updateStepNumbers();
+                triggerChangeSave();
             }
         }
 
@@ -271,12 +331,26 @@
             });
         }
 
-        function handleImageUpload(event, stepId) {
-            const files = Array.from(event.target.files);
+        function handleDrop(event, stepId, element) {
+            event.preventDefault();
+            event.stopPropagation();
+            element.style.borderColor = '#d9d9d9';
+            const files = Array.from(event.dataTransfer.files);
+            processFilesForStep(files, stepId);
+            triggerChangeSave();
+        }
+
+        function processFilesForStep(files, stepId) {
             const step = steps.find(s => s.id === stepId);
+            if (!step) return;
             const previewContainer = document.getElementById(`previews-${stepId}`);
 
             files.forEach(file => {
+                if (!file.type.startsWith('image/')) {
+                    console.warn('Skipping non-image file:', file.name);
+                    return;
+                }
+
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const previewItem = document.createElement('div');
@@ -289,9 +363,14 @@
                 };
                 reader.readAsDataURL(file);
                 
-                // 存储文件对象和原始名称
                 step.images.push(file);
             });
+            triggerChangeSave();
+        }
+
+        function handleImageUpload(event, stepId) {
+            const files = Array.from(event.target.files);
+            processFilesForStep(files, stepId);
         }
 
         function removeImage(stepId, fileName, btnElement) {
@@ -300,59 +379,79 @@
             if (index > -1) {
                 step.images.splice(index, 1);
                 btnElement.parentElement.remove();
+                triggerChangeSave();
             }
         }
 
-        addStepBtn.addEventListener('click', addStep);
+        addStepBtn.addEventListener('click', () => addStep());
 
-        saveAllBtn.addEventListener('click', async () => {
-            const isConfirmed = await showModal('确认操作', '您确定要保存全部信息吗？', true);
-            if (!isConfirmed) {
+        clearAllBtn.addEventListener('click', async () => {
+            const isConfirmed = await showModal('确认清空', '您确定要清空全部内容吗？此操作不可撤销。', true);
+            if (isConfirmed) {
+                clearAll();
+            }
+        });
+
+        function clearAll() {
+            steps = [];
+            stepsContainer.innerHTML = '';
+            removeCover();
+            addStep();
+            updateStepNumbers();
+            // 不自动触发保存，给用户反悔机会，直到他们下一次修改
+        }
+
+        async function saveSteps(isAutoSave = false) {
+            // 如果是自动保存且没有头图或步骤，则跳过
+            if (isAutoSave && (!coverImageFile || steps.length === 0)) {
                 return;
             }
 
-            // 验证头图
-            if (!coverImageFile) {
-                showModal('提示', '请上传教程头图');
-                // 滚动到顶部方便用户查看
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                return;
-            }
-
-            // 验证步骤
-            for (let i = 0; i < steps.length; i++) {
-                const stepEl = document.getElementById(`step-${steps[i].id}`);
-                const desc = stepEl.querySelector('.description-input').value.trim();
-                if (!desc) {
-                    showModal('提示', `请填写步骤 ${i + 1} 的描述`);
+            // 验证步骤描述（仅手动保存时强制验证）
+            if (!isAutoSave) {
+                if (!coverImageFile) {
+                    showModal('提示', '请上传教程头图');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                     return;
                 }
-                if (desc.length > 20) {
-                    showModal('提示', `步骤 ${i + 1} 的描述长度不能超过 20 个字`);
-                    return;
+                for (let i = 0; i < steps.length; i++) {
+                    const stepEl = document.getElementById(`step-${steps[i].id}`);
+                    const desc = stepEl.querySelector('.description-input').value.trim();
+                    if (!desc) {
+                        showModal('提示', `请填写步骤 ${i + 1} 的描述`);
+                        return;
+                    }
+                    if (desc.length > 20) {
+                        showModal('提示', `步骤 ${i + 1} 的描述长度不能超过 20 个字`);
+                        return;
+                    }
+                    if (steps[i].images.length === 0) {
+                        showModal('提示', `请至少为步骤 ${i + 1} 上传一张图片`);
+                        return;
+                    }
                 }
-                if (steps[i].images.length === 0) {
-                    showModal('提示', `请至少为步骤 ${i + 1} 上传一张图片`);
-                    return;
-                }
-                steps[i].description = desc;
             }
 
             const formData = new FormData();
-            const stepsData = steps.map((s, index) => ({
-                stepNumber: index + 1,
-                description: s.description,
-                images: s.images.map(img => img.name)
-            }));
+            const stepsData = steps.map((s, index) => {
+                const stepEl = document.getElementById(`step-${s.id}`);
+                const desc = stepEl ? stepEl.querySelector('.description-input').value.trim() : '';
+                return {
+                    stepNumber: index + 1,
+                    description: desc,
+                    images: s.images.map(img => img.name)
+                };
+            });
 
             formData.append('steps', JSON.stringify(stepsData));
+            if (currentDirName) {
+                formData.append('dirName', currentDirName);
+            }
             
-            // 添加头图
             if (coverImageFile) {
                 formData.append('coverImage', coverImageFile);
             }
 
-            // 添加所有图片文件
             steps.forEach(s => {
                 s.images.forEach(file => {
                     formData.append('stepImages', file);
@@ -360,8 +459,12 @@
             });
 
             try {
-                saveAllBtn.disabled = true;
-                loadingText.style.display = 'block';
+                if (!isAutoSave) {
+                    saveAllBtn.disabled = true;
+                    loadingText.style.display = 'block';
+                } else {
+                    autoSaveStatus.textContent = '正在自动保存...';
+                }
                 
                 const response = await fetch('/api/save-steps', {
                     method: 'POST',
@@ -370,16 +473,32 @@
                 
                 const result = await response.json();
                 if (result.success) {
-                    showModal('成功', '全部信息保存成功！目录名：' + result.dirName);
+                    currentDirName = result.dirName;
+                    const now = new Date().toLocaleTimeString();
+                    if (!isAutoSave) {
+                        showModal('成功', '全部信息保存成功！目录名：' + result.dirName);
+                    }
+                    autoSaveStatus.textContent = `上次保存时间：${now}`;
                 } else {
-                    showModal('失败', '保存失败：' + result.message);
+                    if (!isAutoSave) showModal('失败', '保存失败：' + result.message);
+                    autoSaveStatus.textContent = '自动保存失败';
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showModal('错误', '网络错误，请稍后重试');
+                if (!isAutoSave) showModal('错误', '网络错误，请稍后重试');
+                autoSaveStatus.textContent = '网络错误，自动保存失败';
             } finally {
-                saveAllBtn.disabled = false;
-                loadingText.style.display = 'none';
+                if (!isAutoSave) {
+                    saveAllBtn.disabled = false;
+                    loadingText.style.display = 'none';
+                }
+            }
+        }
+
+        saveAllBtn.addEventListener('click', async () => {
+            const isConfirmed = await showModal('确认操作', '您确定要保存全部信息吗？', true);
+            if (isConfirmed) {
+                saveSteps(false);
             }
         });
     </script>
